@@ -1,5 +1,5 @@
 """
-Excel Field Extractor v7.1
+Excel Field Extractor v7.2
 Drag & drop a folder, configure search parameters, extract cell values from Excel files.
 """
 import os
@@ -238,15 +238,17 @@ DROP_BG    = "#f0f6ff"   # drop zone tint
 DROP_BD    = "#b3d0f0"   # drop zone border (blue-tinted)
 ENTRY_BG   = "#ffffff"
 
-# Font stack: Segoe UI Variable (Win11) → Segoe UI (Win10) → Helvetica
-_FONT_FACE = "Segoe UI Variable"
+# Font stack: Segoe UI Variable Text (Win11) → Segoe UI (Win10) → Microsoft YaHei UI (CN)
+# tkinter only supports a single font face string — we pick the primary face and rely on
+# the OS to fall back for characters not covered (Win10 already has Segoe UI + YaHei).
+_FONT_FACE = "Segoe UI Variable Text"
 FONT_BODY  = (_FONT_FACE, 10)
 FONT_LABEL = (_FONT_FACE, 10)
-FONT_BOLD  = (_FONT_FACE, 10, "bold")
-FONT_TITLE = (_FONT_FACE, 13, "bold")
+FONT_BOLD  = (_FONT_FACE, 11, "bold")
+FONT_TITLE = (_FONT_FACE, 14, "bold")
 FONT_H2    = (_FONT_FACE, 11, "bold")
-FONT_SMALL = (_FONT_FACE, 9)
-FONT_MONO  = ("Consolas", 9)
+FONT_SMALL = (_FONT_FACE, 10)
+FONT_MONO  = ("Consolas", 10)
 
 
 def apply_theme(root):
@@ -274,14 +276,30 @@ def apply_theme(root):
                     background=SURFACE, foreground=ACCENT,
                     font=FONT_H2)
 
-    # Checkbutton / Radiobutton
-    style.configure("TCheckbutton", background=SURFACE, foreground=TEXT,
-                    font=FONT_BODY, focuscolor=SURFACE)
-    style.map("TCheckbutton", background=[("active", SURFACE)])
+    # Checkbutton / Radiobutton — use 'clam' theme base so indicators are always visible
+    style.configure("TCheckbutton",
+                    background=SURFACE, foreground=TEXT,
+                    font=FONT_BODY, focuscolor=SURFACE,
+                    indicatorcolor=SURFACE, indicatorbackground=SURFACE,
+                    indicatorrelief="solid", indicatormargin=3,
+                    borderwidth=1)
+    style.map("TCheckbutton",
+              background=[("active", SURFACE)],
+              indicatorcolor=[("selected", ACCENT), ("!selected", SURFACE)],
+              indicatorbackground=[("selected", ACCENT), ("!selected", ENTRY_BG)],
+              bordercolor=[("focus", ACCENT), ("!focus", BORDER2)])
 
-    style.configure("TRadiobutton", background=SURFACE, foreground=TEXT,
-                    font=FONT_BODY, focuscolor=SURFACE)
-    style.map("TRadiobutton", background=[("active", SURFACE)])
+    style.configure("TRadiobutton",
+                    background=SURFACE, foreground=TEXT,
+                    font=FONT_BODY, focuscolor=SURFACE,
+                    indicatorcolor=SURFACE, indicatorbackground=SURFACE,
+                    indicatorrelief="solid", indicatormargin=3,
+                    borderwidth=1)
+    style.map("TRadiobutton",
+              background=[("active", SURFACE)],
+              indicatorcolor=[("selected", ACCENT), ("!selected", SURFACE)],
+              indicatorbackground=[("selected", ACCENT), ("!selected", ENTRY_BG)],
+              bordercolor=[("focus", ACCENT), ("!focus", BORDER2)])
 
     # Entry
     style.configure("TEntry", fieldbackground=ENTRY_BG, foreground=TEXT,
@@ -401,7 +419,7 @@ class App:
     # UI construction
     # ------------------------------------------------------------------
 
-    def _card(self, parent, title, pady=(6, 4)):
+    def _card(self, parent, title, pady=(8, 4)):
         f = ttk.LabelFrame(parent, text=title, style="Card.TLabelframe")
         f.pack(fill='x', padx=16, pady=pady)
         return f
@@ -423,7 +441,7 @@ class App:
                  text="Excel \u5b57\u6bb5\u63d0\u53d6\u5de5\u5177",
                  bg=SURFACE, fg=TEXT, font=FONT_TITLE).pack(anchor='w')
         tk.Label(title_col,
-                 text="v7.1  \u2014  \u6279\u91cf\u63d0\u53d6 Excel \u5355\u5143\u683c\u5185\u5bb9",
+                 text="v7.2  \u2014  \u6279\u91cf\u63d0\u53d6 Excel \u5355\u5143\u683c\u5185\u5bb9",
                  bg=SURFACE, fg=SUBTEXT, font=FONT_SMALL).pack(anchor='w')
 
         # Bottom border of titlebar
@@ -509,7 +527,7 @@ class App:
                    command=self._choose_folder).pack(side='left')
 
         # ---- Parameters card ----
-        params_card = self._card(main, "\u67e5\u627e\u53c2\u6570", pady=(6, 4))
+        params_card = self._card(main, "\u67e5\u627e\u53c2\u6570", pady=(8, 4))
 
         grid = tk.Frame(params_card, bg=SURFACE)
         grid.pack(fill='x')
@@ -518,8 +536,8 @@ class App:
 
         def lbl(text, row, col):
             tk.Label(grid, text=text, bg=SURFACE, fg=SUBTEXT,
-                     font=FONT_SMALL).grid(row=row, column=col, sticky='e',
-                                           padx=(0, 6), pady=5)
+                     font=FONT_LABEL).grid(row=row, column=col, sticky='e',
+                                           padx=(0, 8), pady=6)
 
         lbl("\u5b9a\u4f4d\u5185\u5bb9 X", 0, 0)
         self.search_text = tk.StringVar()
@@ -560,7 +578,7 @@ class App:
         sheet_row = tk.Frame(params_card, bg=SURFACE)
         sheet_row.pack(fill='x')
         tk.Label(sheet_row, text="Sheet \u9009\u62e9",
-                 bg=SURFACE, fg=SUBTEXT, font=FONT_SMALL).pack(side='left', padx=(0, 14))
+                 bg=SURFACE, fg=SUBTEXT, font=FONT_LABEL).pack(side='left', padx=(0, 14))
 
         self.sheet_mode = tk.StringVar(value='index')
 
@@ -582,22 +600,24 @@ class App:
         self._update_sheet_mode()
 
         # ---- Action bar ----
-        action_bar = tk.Frame(main, bg=BG)
-        action_bar.pack(fill='x', padx=16, pady=10)
+        action_card = self._card(main, "\u64cd\u4f5c", pady=(8, 4))
 
-        # Export format
-        fmt_group = tk.Frame(action_bar, bg=BG)
+        action_bar = tk.Frame(action_card, bg=SURFACE)
+        action_bar.pack(fill='x')
+
+        # Export format (left side) — parent must be SURFACE for radiobutton bg to match
+        fmt_group = tk.Frame(action_bar, bg=SURFACE)
         fmt_group.pack(side='left')
         tk.Label(fmt_group, text="\u5bfc\u51fa\u683c\u5f0f",
-                 bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(side='left', padx=(0, 10))
+                 bg=SURFACE, fg=SUBTEXT, font=FONT_LABEL).pack(side='left', padx=(0, 10))
         self.export_fmt = tk.StringVar(value="xlsx")
         for fmt in [("TXT", "txt"), ("CSV", "csv"), ("XLSX", "xlsx")]:
             ttk.Radiobutton(fmt_group, text=fmt[0],
                             variable=self.export_fmt,
                             value=fmt[1]).pack(side='left', padx=4)
 
-        # Buttons
-        btn_group = tk.Frame(action_bar, bg=BG)
+        # Buttons (right side)
+        btn_group = tk.Frame(action_bar, bg=SURFACE)
         btn_group.pack(side='right')
 
         self.export_btn_top = ttk.Button(btn_group, text="\u2193  \u5bfc\u51fa",
@@ -625,7 +645,7 @@ class App:
         self.status_label.pack(fill='x', pady=(2, 0))
 
         # ---- Results card ----
-        results_card = self._card(main, "\u63d0\u53d6\u7ed3\u679c", pady=(4, 14))
+        results_card = self._card(main, "\u63d0\u53d6\u7ed3\u679c", pady=(8, 16))
 
         # Column headers & widths
         cols = ["\u6587\u4ef6\u540d", "\u5b57\u6bb5\u5185\u5bb9",
