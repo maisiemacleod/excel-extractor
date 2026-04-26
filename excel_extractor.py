@@ -1,5 +1,5 @@
 """
-Excel Field Extractor v7
+Excel Field Extractor v7.1
 Drag & drop a folder, configure search parameters, extract cell values from Excel files.
 """
 import os
@@ -423,7 +423,7 @@ class App:
                  text="Excel \u5b57\u6bb5\u63d0\u53d6\u5de5\u5177",
                  bg=SURFACE, fg=TEXT, font=FONT_TITLE).pack(anchor='w')
         tk.Label(title_col,
-                 text="v7  \u2014  \u6279\u91cf\u63d0\u53d6 Excel \u5355\u5143\u683c\u5185\u5bb9",
+                 text="v7.1  \u2014  \u6279\u91cf\u63d0\u53d6 Excel \u5355\u5143\u683c\u5185\u5bb9",
                  bg=SURFACE, fg=SUBTEXT, font=FONT_SMALL).pack(anchor='w')
 
         # Bottom border of titlebar
@@ -609,11 +609,6 @@ class App:
                                    style="Accent.TButton",
                                    command=self._run)
         self.run_btn.pack(side='left')
-
-        # Export button right next to run button (always visible)
-        self.export_btn_top = ttk.Button(action_frame, text="\u2193  \u5bfc\u51fa\u7ed3\u679c",
-                                          command=self._export, state='disabled')
-        self.export_btn_top.pack(side='right', padx=4)
 
         # ---- Progress ----
         prog_frame = tk.Frame(main, bg=BG)
