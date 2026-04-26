@@ -1,5 +1,5 @@
 """
-Excel Field Extractor v5
+Excel Field Extractor v7
 Drag & drop a folder, configure search parameters, extract cell values from Excel files.
 """
 import os
@@ -214,29 +214,39 @@ def export_xlsx(rows, filepath):
 
 
 # ---------------------------------------------------------------------------
-# Theme / style constants
+# Theme — Windows 11 Fluent Light
 # ---------------------------------------------------------------------------
 
-BG = "#1e1e2e"           # dark base
-SURFACE = "#2a2a3e"      # card / frame bg
-ACCENT = "#7c6af7"       # purple accent
-ACCENT2 = "#5a4fcf"      # darker accent (hover/press)
-TEXT = "#cdd6f4"         # primary text
-SUBTEXT = "#a6adc8"      # secondary text
-GREEN = "#a6e3a1"        # success
-RED = "#f38ba8"          # error
-BORDER = "#45475a"       # border / separator
-DROP_BG = "#2a2a3e"
-DROP_ACTIVE = "#313149"
-ENTRY_BG = "#313149"
-BTN_BG = ACCENT
-BTN_FG = "#ffffff"
-ROW_ODD = "#252536"
-ROW_EVEN = "#2a2a3e"
-FONT_MAIN = ("Segoe UI", 10)
-FONT_BOLD = ("Segoe UI", 10, "bold")
-FONT_TITLE = ("Segoe UI", 11, "bold")
-FONT_SMALL = ("Segoe UI", 9)
+BG         = "#f3f3f3"   # window background
+SURFACE    = "#ffffff"   # card / panel background
+SURFACE2   = "#f9f9f9"   # secondary surface (alternate rows)
+ACCENT     = "#0067c0"   # Windows 11 blue
+ACCENT_H   = "#1177cc"   # hover blue
+ACCENT_D   = "#005ba3"   # pressed/dark blue
+TEXT       = "#1a1a1a"   # primary text
+SUBTEXT    = "#5a5a5a"   # secondary text
+PLACEHOLDER= "#999999"   # hint text
+GREEN      = "#107c10"   # success green
+GREEN_BG   = "#dff6dd"   # success background
+RED        = "#c42b1c"   # error red
+RED_BG     = "#fde7e9"   # error row background
+BORDER     = "#e0e0e0"   # divider / border
+BORDER2    = "#c8c8c8"   # focused border
+ROW_ODD    = "#ffffff"
+ROW_EVEN   = "#f5f5f5"
+DROP_BG    = "#f0f6ff"   # drop zone tint
+DROP_BD    = "#b3d0f0"   # drop zone border (blue-tinted)
+ENTRY_BG   = "#ffffff"
+
+# Font stack: Segoe UI Variable (Win11) → Segoe UI (Win10) → Helvetica
+_FONT_FACE = "Segoe UI Variable"
+FONT_BODY  = (_FONT_FACE, 10)
+FONT_LABEL = (_FONT_FACE, 10)
+FONT_BOLD  = (_FONT_FACE, 10, "bold")
+FONT_TITLE = (_FONT_FACE, 13, "bold")
+FONT_H2    = (_FONT_FACE, 11, "bold")
+FONT_SMALL = (_FONT_FACE, 9)
+FONT_MONO  = ("Consolas", 9)
 
 
 def apply_theme(root):
@@ -244,60 +254,132 @@ def apply_theme(root):
     style.theme_use('default')
 
     style.configure(".", background=BG, foreground=TEXT,
-                    font=FONT_MAIN, borderwidth=0, relief="flat")
-    style.configure("TFrame", background=BG)
-    style.configure("TLabel", background=BG, foreground=TEXT, font=FONT_MAIN)
-    style.configure("TLabelframe", background=SURFACE, foreground=SUBTEXT,
-                    font=FONT_BOLD, bordercolor=BORDER, relief="flat", padding=6)
-    style.configure("TLabelframe.Label", background=SURFACE, foreground=ACCENT,
-                    font=FONT_BOLD)
+                    font=FONT_BODY, borderwidth=0, relief="flat")
 
+    style.configure("TFrame", background=BG)
+    style.configure("Surface.TFrame", background=SURFACE)
+
+    # Labels
+    style.configure("TLabel", background=BG, foreground=TEXT, font=FONT_LABEL)
+    style.configure("Surface.TLabel", background=SURFACE, foreground=TEXT, font=FONT_LABEL)
+    style.configure("Sub.TLabel", background=BG, foreground=SUBTEXT, font=FONT_SMALL)
+    style.configure("SubSurface.TLabel", background=SURFACE, foreground=SUBTEXT, font=FONT_SMALL)
+
+    # LabelFrame — card style
+    style.configure("Card.TLabelframe",
+                    background=SURFACE, foreground=TEXT,
+                    bordercolor=BORDER, relief="solid", borderwidth=1,
+                    padding=12)
+    style.configure("Card.TLabelframe.Label",
+                    background=SURFACE, foreground=ACCENT,
+                    font=FONT_H2)
+
+    # Checkbutton / Radiobutton
     style.configure("TCheckbutton", background=SURFACE, foreground=TEXT,
-                    font=FONT_MAIN, focuscolor=SURFACE)
+                    font=FONT_BODY, focuscolor=SURFACE)
     style.map("TCheckbutton", background=[("active", SURFACE)])
 
     style.configure("TRadiobutton", background=SURFACE, foreground=TEXT,
-                    font=FONT_MAIN, focuscolor=SURFACE)
+                    font=FONT_BODY, focuscolor=SURFACE)
     style.map("TRadiobutton", background=[("active", SURFACE)])
 
+    # Entry
     style.configure("TEntry", fieldbackground=ENTRY_BG, foreground=TEXT,
-                    insertcolor=TEXT, borderwidth=1, relief="flat",
-                    padding=(6, 4))
-    style.map("TEntry", fieldbackground=[("readonly", SURFACE)])
+                    insertcolor=TEXT, borderwidth=1, relief="solid",
+                    padding=(7, 5))
+    style.map("TEntry",
+              bordercolor=[("focus", ACCENT), ("!focus", BORDER)],
+              fieldbackground=[("readonly", SURFACE2)])
 
+    # Spinbox
     style.configure("TSpinbox", fieldbackground=ENTRY_BG, foreground=TEXT,
                     background=ENTRY_BG, arrowcolor=SUBTEXT,
-                    borderwidth=1, relief="flat", padding=(4, 4))
+                    borderwidth=1, relief="solid", padding=(5, 4))
+    style.map("TSpinbox",
+              bordercolor=[("focus", ACCENT), ("!focus", BORDER)])
 
-    style.configure("Accent.TButton", background=ACCENT, foreground=BTN_FG,
-                    font=FONT_BOLD, padding=(16, 7), relief="flat",
-                    borderwidth=0)
+    # Primary button (accent)
+    style.configure("Accent.TButton",
+                    background=ACCENT, foreground="#ffffff",
+                    font=FONT_BOLD, padding=(18, 8),
+                    relief="flat", borderwidth=0)
     style.map("Accent.TButton",
-              background=[("active", ACCENT2), ("disabled", BORDER)],
-              foreground=[("disabled", SUBTEXT)])
+              background=[("active", ACCENT_H), ("disabled", "#b0c8e0"), ("pressed", ACCENT_D)],
+              foreground=[("disabled", "#e0e0e0")])
 
-    style.configure("TButton", background=SURFACE, foreground=TEXT,
-                    font=FONT_MAIN, padding=(12, 6), relief="flat",
-                    borderwidth=1)
+    # Secondary button
+    style.configure("TButton",
+                    background=SURFACE, foreground=ACCENT,
+                    font=FONT_BODY, padding=(14, 7),
+                    relief="solid", borderwidth=1)
     style.map("TButton",
-              background=[("active", ENTRY_BG)],
+              background=[("active", "#e8f0f8"), ("pressed", "#d0e4f4")],
+              bordercolor=[("active", ACCENT_H), ("!active", BORDER2)],
               foreground=[("disabled", SUBTEXT)])
 
-    style.configure("TProgressbar", troughcolor=SURFACE, background=ACCENT,
-                    borderwidth=0, thickness=6)
+    # Progressbar
+    style.configure("TProgressbar",
+                    troughcolor=BORDER, background=ACCENT,
+                    borderwidth=0, thickness=4)
 
-    style.configure("Treeview", background=ROW_ODD, foreground=TEXT,
-                    fieldbackground=ROW_ODD, font=FONT_SMALL,
-                    rowheight=24, borderwidth=0, relief="flat")
-    style.configure("Treeview.Heading", background=SURFACE, foreground=ACCENT,
-                    font=FONT_BOLD, borderwidth=0, relief="flat")
+    # Treeview
+    style.configure("Treeview",
+                    background=ROW_ODD, foreground=TEXT,
+                    fieldbackground=ROW_ODD, font=FONT_BODY,
+                    rowheight=26, borderwidth=0, relief="flat")
+    style.configure("Treeview.Heading",
+                    background=SURFACE2, foreground=SUBTEXT,
+                    font=FONT_BOLD, borderwidth=0, relief="flat",
+                    padding=(6, 6))
     style.map("Treeview",
-              background=[("selected", ACCENT2)],
-              foreground=[("selected", "#ffffff")])
-    style.map("Treeview.Heading", background=[("active", ENTRY_BG)])
+              background=[("selected", "#cce4f7")],
+              foreground=[("selected", TEXT)])
+    style.map("Treeview.Heading",
+              background=[("active", BORDER)])
 
-    style.configure("TScrollbar", background=SURFACE, troughcolor=BG,
-                    borderwidth=0, arrowcolor=SUBTEXT, width=10)
+    # Scrollbar — thin & minimal
+    style.configure("TScrollbar",
+                    background=SURFACE2, troughcolor=SURFACE2,
+                    borderwidth=0, arrowcolor=SUBTEXT,
+                    width=8, relief="flat")
+    style.map("TScrollbar",
+              background=[("active", BORDER2)])
+
+    # Separator
+    style.configure("TSeparator", background=BORDER)
+
+
+# ---------------------------------------------------------------------------
+# Rounded-corner frame helper (drawn with Canvas)
+# ---------------------------------------------------------------------------
+
+class RoundedCard(tk.Canvas):
+    """A canvas that draws a rounded-rectangle card background."""
+    RADIUS = 8
+
+    def __init__(self, parent, bg=SURFACE, border=BORDER, **kw):
+        super().__init__(parent, bg=parent["bg"], highlightthickness=0, **kw)
+        self._card_bg = bg
+        self._card_border = border
+        self.bind("<Configure>", self._redraw)
+
+    def _redraw(self, _event=None):
+        w, h, r = self.winfo_width(), self.winfo_height(), self.RADIUS
+        if w < 2 or h < 2:
+            return
+        self.delete("all")
+        x0, y0, x1, y1 = 1, 1, w - 1, h - 1
+        pts = [
+            x0+r, y0, x1-r, y0,
+            x1, y0, x1, y0+r,
+            x1, y1-r, x1, y1,
+            x1-r, y1, x0+r, y1,
+            x0, y1, x0, y1-r,
+            x0, y0+r, x0, y0,
+        ]
+        self.create_polygon(pts, smooth=True,
+                            fill=self._card_bg, outline=self._card_border,
+                            width=1)
 
 
 # ---------------------------------------------------------------------------
@@ -315,185 +397,218 @@ class App:
         apply_theme(root)
         self._build_ui()
 
-    def _section(self, parent, title):
-        f = ttk.LabelFrame(parent, text=title)
-        f.pack(fill='x', padx=12, pady=(6, 2))
+    # ------------------------------------------------------------------
+    # UI construction
+    # ------------------------------------------------------------------
+
+    def _card(self, parent, title, pady=(6, 4)):
+        f = ttk.LabelFrame(parent, text=title, style="Card.TLabelframe")
+        f.pack(fill='x', padx=16, pady=pady)
         return f
 
     def _build_ui(self):
-        # ---- Header bar ----
-        header = tk.Frame(self.root, bg=ACCENT, height=48)
-        header.pack(fill='x')
-        header.pack_propagate(False)
-        tk.Label(header, text="  Excel \u5b57\u6bb5\u63d0\u53d6\u5de5\u5177",
-                 bg=ACCENT, fg="#ffffff", font=("Segoe UI", 13, "bold")).pack(side='left', padx=4)
-        tk.Label(header, text="v5",
-                 bg=ACCENT, fg="#d0cbff", font=("Segoe UI", 9)).pack(side='left')
+        # ---- Title bar ----
+        titlebar = tk.Frame(self.root, bg=SURFACE, height=56)
+        titlebar.pack(fill='x')
+        titlebar.pack_propagate(False)
 
-        # Scrollable main area
-        canvas = tk.Canvas(self.root, bg=BG, highlightthickness=0)
-        vscroll = ttk.Scrollbar(self.root, orient='vertical', command=canvas.yview)
+        # Left: icon + title
+        left_title = tk.Frame(titlebar, bg=SURFACE)
+        left_title.pack(side='left', padx=16, pady=0)
+        tk.Label(left_title, text="\U0001f4ca", bg=SURFACE,
+                 font=(_FONT_FACE, 18)).pack(side='left', padx=(0, 8))
+        title_col = tk.Frame(left_title, bg=SURFACE)
+        title_col.pack(side='left')
+        tk.Label(title_col,
+                 text="Excel \u5b57\u6bb5\u63d0\u53d6\u5de5\u5177",
+                 bg=SURFACE, fg=TEXT, font=FONT_TITLE).pack(anchor='w')
+        tk.Label(title_col,
+                 text="v7  \u2014  \u6279\u91cf\u63d0\u53d6 Excel \u5355\u5143\u683c\u5185\u5bb9",
+                 bg=SURFACE, fg=SUBTEXT, font=FONT_SMALL).pack(anchor='w')
+
+        # Bottom border of titlebar
+        tk.Frame(self.root, bg=BORDER, height=1).pack(fill='x')
+
+        # ---- Scrollable body ----
+        outer = tk.Frame(self.root, bg=BG)
+        outer.pack(fill='both', expand=True)
+
+        canvas = tk.Canvas(outer, bg=BG, highlightthickness=0)
+        vscroll = ttk.Scrollbar(outer, orient='vertical', command=canvas.yview)
         canvas.configure(yscrollcommand=vscroll.set)
         vscroll.pack(side='right', fill='y')
         canvas.pack(side='left', fill='both', expand=True)
 
         main = tk.Frame(canvas, bg=BG)
-        canvas_window = canvas.create_window((0, 0), window=main, anchor='nw')
+        cw = canvas.create_window((0, 0), window=main, anchor='nw')
 
-        def _on_frame_configure(e):
-            canvas.configure(scrollregion=canvas.bbox("all"))
-        def _on_canvas_configure(e):
-            canvas.itemconfig(canvas_window, width=e.width)
-        main.bind("<Configure>", _on_frame_configure)
-        canvas.bind("<Configure>", _on_canvas_configure)
+        main.bind("<Configure>",
+                  lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>",
+                    lambda e: canvas.itemconfig(cw, width=e.width))
+        canvas.bind_all("<MouseWheel>",
+                        lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
 
-        # Mouse wheel scroll
-        def _on_mousewheel(e):
-            canvas.yview_scroll(int(-1 * (e.delta / 120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # ---- Drop zone card ----
+        drop_card = self._card(main, "\u8f93\u5165\u6587\u4ef6\u5939", pady=(14, 4))
 
-        pad = {"padx": 10, "pady": 4}
-
-        # ---- Drop zone ----
-        frame_folder = self._section(main, "\u8f93\u5165\u6587\u4ef6\u5939")
-        frame_folder.configure(labelanchor='nw')
-
-        self.drop_frame = tk.Frame(frame_folder, bg=DROP_BG, relief="flat",
-                                   highlightbackground=BORDER, highlightthickness=1,
+        self.drop_zone = tk.Frame(drop_card, bg=DROP_BG,
+                                   highlightbackground=DROP_BD,
+                                   highlightthickness=1,
                                    cursor="hand2")
-        self.drop_frame.pack(fill='x', padx=4, pady=(4, 6))
+        self.drop_zone.pack(fill='x', pady=(0, 8))
 
-        inner = tk.Frame(self.drop_frame, bg=DROP_BG)
-        inner.pack(pady=14)
+        dz_inner = tk.Frame(self.drop_zone, bg=DROP_BG)
+        dz_inner.pack(pady=18)
 
-        icon_label = tk.Label(inner, text="\U0001f4c2", bg=DROP_BG,
-                               font=("Segoe UI", 22), fg=ACCENT)
-        icon_label.pack()
+        self._drop_icon = tk.Label(dz_inner, text="\U0001f4c2",
+                                    bg=DROP_BG, fg=ACCENT,
+                                    font=(_FONT_FACE, 26))
+        self._drop_icon.pack()
 
-        if HAS_DND:
-            drop_txt = "\u62d6\u653e\u6587\u4ef6\u5939\u5230\u6b64\u5904\uff0c\u6216\u70b9\u51fb\u9009\u62e9"
-        else:
-            drop_txt = "\u70b9\u51fb\u9009\u62e9\u6587\u4ef6\u5939"
-        self.drop_hint = tk.Label(inner, text=drop_txt, bg=DROP_BG,
-                                   fg=SUBTEXT, font=FONT_SMALL)
-        self.drop_hint.pack()
+        drop_hint_text = ("\u62d6\u653e\u6587\u4ef6\u5939\u5230\u6b64\u5904"
+                          if HAS_DND else
+                          "\u70b9\u51fb\u9009\u62e9\u6587\u4ef6\u5939")
+        self._drop_hint = tk.Label(dz_inner,
+                                    text=drop_hint_text,
+                                    bg=DROP_BG, fg=SUBTEXT,
+                                    font=FONT_SMALL)
+        self._drop_hint.pack(pady=(4, 0))
 
-        self.drop_path_label = tk.Label(self.drop_frame, text="",
-                                         bg=DROP_BG, fg=GREEN,
-                                         font=("Segoe UI", 9, "bold"),
-                                         wraplength=580)
-        self.drop_path_label.pack(pady=(0, 6))
+        self._drop_path = tk.Label(self.drop_zone, text="",
+                                    bg=DROP_BG, fg=ACCENT,
+                                    font=FONT_BOLD, wraplength=600)
+        self._drop_path.pack(pady=(0, 8))
 
-        for w in (self.drop_frame, inner, icon_label, self.drop_hint):
+        # Hover effect
+        def _dz_enter(_e=None):
+            self.drop_zone.config(highlightbackground=ACCENT)
+            self._drop_icon.config(fg=ACCENT_H)
+        def _dz_leave(_e=None):
+            self.drop_zone.config(highlightbackground=DROP_BD)
+            self._drop_icon.config(fg=ACCENT)
+
+        for w in (self.drop_zone, dz_inner, self._drop_icon, self._drop_hint):
             w.bind("<Button-1>", self._choose_folder)
-            w.bind("<Enter>", lambda e: self.drop_frame.config(bg=DROP_ACTIVE,
-                highlightbackground=ACCENT))
-            w.bind("<Leave>", lambda e: self.drop_frame.config(bg=DROP_BG,
-                highlightbackground=BORDER))
+            w.bind("<Enter>", _dz_enter)
+            w.bind("<Leave>", _dz_leave)
 
         if HAS_DND:
             try:
-                self.drop_frame.drop_target_register(DND_FILES)
-                self.drop_frame.dnd_bind('<<Drop>>', self._on_drop)
-                self.drop_frame.dnd_bind('<<DragEnter>>', lambda e: e.action)
-                self.drop_frame.dnd_bind('<<DragOver>>', lambda e: e.action)
+                self.drop_zone.drop_target_register(DND_FILES)
+                self.drop_zone.dnd_bind('<<Drop>>', self._on_drop)
+                self.drop_zone.dnd_bind('<<DragEnter>>', lambda e: e.action)
+                self.drop_zone.dnd_bind('<<DragOver>>', lambda e: e.action)
             except Exception:
                 pass
 
-        btn_row = tk.Frame(frame_folder, bg=SURFACE)
-        btn_row.pack(fill='x', padx=4, pady=(0, 4))
-        ttk.Button(btn_row, text="\U0001f4c1  \u9009\u62e9\u6587\u4ef6\u5939",
-                   command=self._choose_folder).pack(side='left', padx=4)
+        # Browse button
+        btn_row = tk.Frame(drop_card, bg=SURFACE)
+        btn_row.pack(anchor='w', pady=(0, 2))
+        ttk.Button(btn_row, text="\U0001f4c1  \u6d4f\u89c8\u6587\u4ef6\u5939\u2026",
+                   command=self._choose_folder).pack(side='left')
 
-        # ---- Parameters: two-column layout ----
-        frame_params = self._section(main, "\u67e5\u627e\u53c2\u6570")
+        # ---- Parameters card ----
+        params_card = self._card(main, "\u67e5\u627e\u53c2\u6570", pady=(6, 4))
 
-        left = tk.Frame(frame_params, bg=SURFACE)
-        left.pack(side='left', fill='both', expand=True, padx=(4, 2), pady=4)
-        right = tk.Frame(frame_params, bg=SURFACE)
-        right.pack(side='left', fill='both', expand=True, padx=(2, 4), pady=4)
+        grid = tk.Frame(params_card, bg=SURFACE)
+        grid.pack(fill='x')
+        grid.columnconfigure(1, weight=1)
+        grid.columnconfigure(3, weight=1)
 
-        def lbl(parent, text, row, col, **kw):
-            tk.Label(parent, text=text, bg=SURFACE, fg=SUBTEXT,
+        def lbl(text, row, col):
+            tk.Label(grid, text=text, bg=SURFACE, fg=SUBTEXT,
                      font=FONT_SMALL).grid(row=row, column=col, sticky='e',
-                                           padx=(4,2), pady=3)
+                                           padx=(0, 6), pady=5)
 
-        # Left column
-        lbl(left, "\u5b9a\u4f4d\u5185\u5bb9 X:", 0, 0)
+        lbl("\u5b9a\u4f4d\u5185\u5bb9 X", 0, 0)
         self.search_text = tk.StringVar()
-        ent = ttk.Entry(left, textvariable=self.search_text, width=24)
-        ent.grid(row=0, column=1, sticky='ew', padx=(0,4), pady=3)
+        ttk.Entry(grid, textvariable=self.search_text,
+                  width=26).grid(row=0, column=1, sticky='ew', pady=5)
 
         self.exact_match = tk.BooleanVar(value=False)
-        cb = ttk.Checkbutton(left, text="\u7cbe\u786e\u5339\u914d",
-                              variable=self.exact_match)
-        cb.grid(row=0, column=2, padx=4, pady=3)
+        ttk.Checkbutton(grid, text="\u7cbe\u786e\u5339\u914d",
+                        variable=self.exact_match,
+                        style="TCheckbutton").grid(row=0, column=2,
+                                                   padx=(12, 0), pady=5, sticky='w')
 
-        lbl(left, "\u7b2c\u51e0\u6b21\u51fa\u73b0 n:", 1, 0)
+        lbl("\u7b2c\u51e0\u6b21\u51fa\u73b0 n", 1, 0)
         self.occurrence_n = tk.IntVar(value=1)
-        ttk.Spinbox(left, from_=-9999, to=9999, textvariable=self.occurrence_n,
-                    width=7).grid(row=1, column=1, sticky='w', padx=(0,4), pady=3)
-        tk.Label(left, text="\u8d1f=\u5012\u6570", bg=SURFACE,
-                 fg=SUBTEXT, font=FONT_SMALL).grid(row=1, column=2, padx=4)
+        spin_row = tk.Frame(grid, bg=SURFACE)
+        spin_row.grid(row=1, column=1, sticky='w', pady=5)
+        ttk.Spinbox(spin_row, from_=-9999, to=9999,
+                    textvariable=self.occurrence_n,
+                    width=8).pack(side='left')
+        tk.Label(spin_row, text="\u8d1f\u6570\u4e3a\u5012\u5e8f",
+                 bg=SURFACE, fg=PLACEHOLDER, font=FONT_SMALL).pack(side='left', padx=6)
 
-        left.columnconfigure(1, weight=1)
-
-        # Right column
-        lbl(right, "\u5411\u53f3\u79fb\u52a8 r:", 0, 0)
+        # Right side: offsets
+        lbl("\u5411\u53f3\u504f\u79fb r", 0, 4)
         self.offset_r = tk.IntVar(value=0)
-        ttk.Spinbox(right, from_=-9999, to=9999, textvariable=self.offset_r,
-                    width=7).grid(row=0, column=1, sticky='w', padx=(0,4), pady=3)
+        ttk.Spinbox(grid, from_=-9999, to=9999, textvariable=self.offset_r,
+                    width=8).grid(row=0, column=5, sticky='w', padx=(0, 12), pady=5)
 
-        lbl(right, "\u5411\u4e0b\u79fb\u52a8 d:", 1, 0)
+        lbl("\u5411\u4e0b\u504f\u79fb d", 1, 4)
         self.offset_d = tk.IntVar(value=0)
-        ttk.Spinbox(right, from_=-9999, to=9999, textvariable=self.offset_d,
-                    width=7).grid(row=1, column=1, sticky='w', padx=(0,4), pady=3)
+        ttk.Spinbox(grid, from_=-9999, to=9999, textvariable=self.offset_d,
+                    width=8).grid(row=1, column=5, sticky='w', padx=(0, 12), pady=5)
 
-        right.columnconfigure(1, weight=1)
+        # Separator
+        tk.Frame(params_card, bg=BORDER, height=1).pack(fill='x', pady=(8, 6))
 
-        # ---- Sheet selection ----
-        frame_sheet = self._section(main, "Sheet \u9009\u62e9")
-
-        sheet_inner = tk.Frame(frame_sheet, bg=SURFACE)
-        sheet_inner.pack(fill='x', padx=4, pady=4)
+        # Sheet selection
+        sheet_row = tk.Frame(params_card, bg=SURFACE)
+        sheet_row.pack(fill='x')
+        tk.Label(sheet_row, text="Sheet \u9009\u62e9",
+                 bg=SURFACE, fg=SUBTEXT, font=FONT_SMALL).pack(side='left', padx=(0, 14))
 
         self.sheet_mode = tk.StringVar(value='index')
 
-        ttk.Radiobutton(sheet_inner, text="\u7b2c\u51e0\u4e2a Sheet",
+        ttk.Radiobutton(sheet_row, text="\u7b2c\u51e0\u4e2a Sheet",
                         variable=self.sheet_mode, value='index',
-                        command=self._update_sheet_mode).grid(row=0, column=0, padx=4, pady=3, sticky='w')
+                        command=self._update_sheet_mode).pack(side='left')
         self.sheet_index = tk.IntVar(value=1)
-        self.sheet_index_spin = ttk.Spinbox(sheet_inner, from_=-9999, to=9999,
+        self.sheet_index_spin = ttk.Spinbox(sheet_row, from_=-9999, to=9999,
                                              textvariable=self.sheet_index, width=7)
-        self.sheet_index_spin.grid(row=0, column=1, padx=4, pady=3, sticky='w')
-        tk.Label(sheet_inner, text="\u8d1f=\u5012\u6570", bg=SURFACE,
-                 fg=SUBTEXT, font=FONT_SMALL).grid(row=0, column=2, padx=4)
+        self.sheet_index_spin.pack(side='left', padx=(4, 16))
 
-        ttk.Radiobutton(sheet_inner, text="Sheet \u540d\u79f0",
+        ttk.Radiobutton(sheet_row, text="Sheet \u540d\u79f0",
                         variable=self.sheet_mode, value='name',
-                        command=self._update_sheet_mode).grid(row=1, column=0, padx=4, pady=3, sticky='w')
+                        command=self._update_sheet_mode).pack(side='left')
         self.sheet_name = tk.StringVar()
-        self.sheet_name_entry = ttk.Entry(sheet_inner, textvariable=self.sheet_name, width=20)
-        self.sheet_name_entry.grid(row=1, column=1, columnspan=2, padx=4, pady=3, sticky='ew')
-        sheet_inner.columnconfigure(1, weight=1)
+        self.sheet_name_entry = ttk.Entry(sheet_row, textvariable=self.sheet_name, width=18)
+        self.sheet_name_entry.pack(side='left', padx=(4, 0))
+
         self._update_sheet_mode()
 
-        # ---- Export format + Run button row ----
-        action_frame = tk.Frame(main, bg=BG)
-        action_frame.pack(fill='x', padx=12, pady=8)
+        # ---- Action bar ----
+        action_bar = tk.Frame(main, bg=BG)
+        action_bar.pack(fill='x', padx=16, pady=10)
 
-        fmt_frame = tk.Frame(action_frame, bg=BG)
-        fmt_frame.pack(side='left')
-        tk.Label(fmt_frame, text="\u5bfc\u51fa\u683c\u5f0f:", bg=BG,
-                 fg=SUBTEXT, font=FONT_SMALL).pack(side='left', padx=(0,6))
+        # Export format
+        fmt_group = tk.Frame(action_bar, bg=BG)
+        fmt_group.pack(side='left')
+        tk.Label(fmt_group, text="\u5bfc\u51fa\u683c\u5f0f",
+                 bg=BG, fg=SUBTEXT, font=FONT_SMALL).pack(side='left', padx=(0, 10))
         self.export_fmt = tk.StringVar(value="xlsx")
-        for fmt in ["TXT", "CSV", "XLSX"]:
-            ttk.Radiobutton(fmt_frame, text=fmt,
-                            variable=self.export_fmt, value=fmt.lower()).pack(side='left', padx=4)
+        for fmt in [("TXT", "txt"), ("CSV", "csv"), ("XLSX", "xlsx")]:
+            ttk.Radiobutton(fmt_group, text=fmt[0],
+                            variable=self.export_fmt,
+                            value=fmt[1]).pack(side='left', padx=4)
 
-        self.run_btn = ttk.Button(action_frame, text="\u25b6  \u5f00\u59cb\u63d0\u53d6",
-                                   style="Accent.TButton", command=self._run)
-        self.run_btn.pack(side='right', padx=4)
+        # Buttons
+        btn_group = tk.Frame(action_bar, bg=BG)
+        btn_group.pack(side='right')
+
+        self.export_btn_top = ttk.Button(btn_group, text="\u2193  \u5bfc\u51fa",
+                                          command=self._export, state='disabled')
+        self.export_btn_top.pack(side='left', padx=(0, 8))
+
+        self.run_btn = ttk.Button(btn_group,
+                                   text="\u25b6  \u5f00\u59cb\u63d0\u53d6",
+                                   style="Accent.TButton",
+                                   command=self._run)
+        self.run_btn.pack(side='left')
 
         # Export button right next to run button (always visible)
         self.export_btn_top = ttk.Button(action_frame, text="\u2193  \u5bfc\u51fa\u7ed3\u679c",
@@ -502,55 +617,60 @@ class App:
 
         # ---- Progress ----
         prog_frame = tk.Frame(main, bg=BG)
-        prog_frame.pack(fill='x', padx=12, pady=(0, 4))
+        prog_frame.pack(fill='x', padx=16, pady=(0, 4))
 
         self.progress_var = tk.DoubleVar(value=0)
-        self.progress_bar = ttk.Progressbar(prog_frame, variable=self.progress_var, maximum=100)
+        self.progress_bar = ttk.Progressbar(prog_frame,
+                                             variable=self.progress_var,
+                                             maximum=100)
         self.progress_bar.pack(fill='x')
-
-        self.status_label = tk.Label(prog_frame, text="", bg=BG,
-                                      fg=SUBTEXT, font=FONT_SMALL, anchor='w')
+        self.status_label = tk.Label(prog_frame, text="",
+                                      bg=BG, fg=SUBTEXT,
+                                      font=FONT_SMALL, anchor='w')
         self.status_label.pack(fill='x', pady=(2, 0))
 
-        # ---- Results table ----
-        frame_table = tk.Frame(main, bg=BG)
-        frame_table.pack(fill='both', expand=True, padx=12, pady=(4, 4))
+        # ---- Results card ----
+        results_card = self._card(main, "\u63d0\u53d6\u7ed3\u679c", pady=(4, 14))
 
-        tk.Label(frame_table, text="\u63d0\u53d6\u7ed3\u679c",
-                 bg=BG, fg=ACCENT, font=FONT_BOLD).pack(anchor='w', pady=(0, 4))
+        # Column headers & widths
+        cols = ["\u6587\u4ef6\u540d", "\u5b57\u6bb5\u5185\u5bb9",
+                "\u51fa\u73b0\u6b21\u6570", "\u6b21\u5e8f\u6570",
+                "\u884c", "\u5217", "\u8bfb\u53d6\u5230\u7684\u503c"]
+        col_widths = [180, 200, 80, 70, 50, 50, 180]
 
-        tree_frame = tk.Frame(frame_table, bg=SURFACE,
-                               highlightbackground=BORDER, highlightthickness=1)
-        tree_frame.pack(fill='both', expand=True)
+        tree_wrap = tk.Frame(results_card, bg=BORDER, bd=0)
+        tree_wrap.pack(fill='both', expand=True)
 
-        cols = ["\u6587\u4ef6\u540d", "\u5b57\u6bb5\u5185\u5bb9", "\u51fa\u73b0\u6b21\u6570",
-                "\u6b21\u5e8f\u6570", "\u884c", "\u5217", "\u8bfb\u53d6\u503c"]
-        self.tree = ttk.Treeview(tree_frame, columns=cols, show='headings', height=12)
-        col_widths = [160, 200, 80, 70, 50, 50, 160]
+        self.tree = ttk.Treeview(tree_wrap, columns=cols,
+                                  show='headings', height=12)
         for col, w in zip(cols, col_widths):
             self.tree.heading(col, text=col)
             self.tree.column(col, width=w, minwidth=40, anchor='w')
 
-        self.tree.tag_configure('odd', background=ROW_ODD)
+        self.tree.tag_configure('odd',  background=ROW_ODD)
         self.tree.tag_configure('even', background=ROW_EVEN)
-        self.tree.tag_configure('error', background="#3d1a1a", foreground=RED)
+        self.tree.tag_configure('error', background=RED_BG, foreground=RED)
 
-        self.tree.pack(fill='both', expand=True, side='left')
-        sb = ttk.Scrollbar(tree_frame, orient='vertical', command=self.tree.yview)
-        sb.pack(side='right', fill='y')
+        sb = ttk.Scrollbar(tree_wrap, orient='vertical', command=self.tree.yview)
         self.tree.configure(yscrollcommand=sb.set)
+        self.tree.pack(side='left', fill='both', expand=True)
+        sb.pack(side='right', fill='y')
 
-        # ---- Bottom bar ----
+        # ---- Bottom summary bar ----
         bottom = tk.Frame(main, bg=BG)
-        bottom.pack(fill='x', padx=12, pady=(4, 12))
+        bottom.pack(fill='x', padx=16, pady=(4, 14))
 
-        self.result_count = tk.Label(bottom, text="", bg=BG,
-                                      fg=SUBTEXT, font=FONT_SMALL)
+        self.result_count = tk.Label(bottom, text="",
+                                      bg=BG, fg=SUBTEXT, font=FONT_SMALL)
         self.result_count.pack(side='left')
 
         self.export_btn = ttk.Button(bottom, text="\u2193  \u5bfc\u51fa\u7ed3\u679c",
                                       command=self._export, state='disabled')
-        self.export_btn.pack(side='right', padx=4)
+        self.export_btn.pack(side='right')
+
+    # ------------------------------------------------------------------
+    # Event handlers
+    # ------------------------------------------------------------------
 
     def _update_sheet_mode(self):
         mode = self.sheet_mode.get()
@@ -568,9 +688,9 @@ class App:
 
     def _set_folder(self, path):
         self.folder_path.set(path)
-        short = path if len(path) < 60 else "..." + path[-57:]
-        self.drop_path_label.config(text="\u2714  " + short)
-        self.drop_hint.config(fg=GREEN)
+        short = path if len(path) < 65 else "\u2026" + path[-62:]
+        self._drop_path.config(text="\u2714  " + short)
+        self._drop_hint.config(fg=GREEN)
 
     def _on_drop(self, event):
         path = event.data.strip()
@@ -579,7 +699,9 @@ class App:
         if os.path.isdir(path):
             self._set_folder(path)
         else:
-            messagebox.showwarning("\u63d0\u793a", "\u8bf7\u62d6\u653e\u6587\u4ef6\u5939\uff0c\u800c\u975e\u6587\u4ef6")
+            messagebox.showwarning(
+                "\u63d0\u793a",
+                "\u8bf7\u62d6\u653e\u6587\u4ef6\u5939\uff0c\u800c\u975e\u6587\u4ef6")
         return event.action
 
     def _run(self):
@@ -593,7 +715,8 @@ class App:
             return
 
         sheet_mode = self.sheet_mode.get()
-        sheet_val = self.sheet_index.get() if sheet_mode == 'index' else self.sheet_name.get()
+        sheet_val = (self.sheet_index.get() if sheet_mode == 'index'
+                     else self.sheet_name.get())
         if sheet_mode == 'name' and not sheet_val:
             messagebox.showwarning("\u63d0\u793a", "\u8bf7\u8f93\u5165 Sheet \u540d\u79f0")
             return
@@ -611,9 +734,9 @@ class App:
             files = find_excel_files(folder)
             total = len(files)
             if total == 0:
-                self.root.after(0, lambda: self._finish([], "\u672a\u627e\u5230 Excel \u6587\u4ef6"))
+                self.root.after(0, lambda: self._finish(
+                    [], "\u672a\u627e\u5230 Excel \u6587\u4ef6"))
                 return
-
             results = []
             for i, fp in enumerate(files):
                 res = process_file(
@@ -627,9 +750,10 @@ class App:
                 if res:
                     results.append(res)
                 pct = (i + 1) / total * 100
-                self.root.after(0, lambda p=pct, f=fp: self._update_progress(p, os.path.basename(f)))
-
-            msg = f"\u5904\u7406 {total} \u4e2a\u6587\u4ef6\uff0c\u5339\u914d {len(results)} \u6761\u7ed3\u679c"
+                self.root.after(0, lambda p=pct, f=fp:
+                                self._update_progress(p, os.path.basename(f)))
+            msg = (f"\u5904\u7406 {total} \u4e2a\u6587\u4ef6\uff0c"
+                   f"\u5339\u914d {len(results)} \u6761\u7ed3\u679c")
             self.root.after(0, lambda: self._finish(results, msg))
 
         threading.Thread(target=worker, daemon=True).start()
@@ -643,9 +767,12 @@ class App:
         self.status_label.config(text=msg)
         self.progress_var.set(100)
         for i, row in enumerate(results):
-            tag = 'error' if 'error' in row else ('odd' if i % 2 == 0 else 'even')
+            tag = ('error' if 'error' in row
+                   else 'odd' if i % 2 == 0 else 'even')
             if 'error' in row:
-                self.tree.insert('', 'end', values=(row['error'], '', '', '', '', '', ''), tags=(tag,))
+                self.tree.insert('', 'end',
+                                  values=(row['error'], '', '', '', '', '', ''),
+                                  tags=(tag,))
             else:
                 self.tree.insert('', 'end', values=(
                     row['filename'],
@@ -662,21 +789,19 @@ class App:
             self.export_btn_top.config(state='normal')
             self.result_count.config(
                 text=f"\u5171 {len(results)} \u6761\u7ed3\u679c",
-                fg=GREEN
-            )
+                fg=GREEN)
 
     def _export(self):
         fmt = self.export_fmt.get()
         ftypes = {
-            "txt": [("Text files", "*.txt")],
-            "csv": [("CSV files", "*.csv")],
+            "txt":  [("Text files", "*.txt")],
+            "csv":  [("CSV files", "*.csv")],
             "xlsx": [("Excel files", "*.xlsx")],
         }
         path = filedialog.asksaveasfilename(
             defaultextension=f".{fmt}",
             filetypes=ftypes.get(fmt, [("All files", "*.*")]),
-            title="\u4fdd\u5b58\u7ed3\u679c"
-        )
+            title="\u4fdd\u5b58\u7ed3\u679c")
         if not path:
             return
         try:
@@ -686,7 +811,8 @@ class App:
                 export_csv(self.results, path)
             elif fmt == 'xlsx':
                 export_xlsx(self.results, path)
-            messagebox.showinfo("\u5bfc\u51fa\u6210\u529f", f"\u5df2\u5bfc\u51fa\u5230:\n{path}")
+            messagebox.showinfo("\u5bfc\u51fa\u6210\u529f",
+                                f"\u5df2\u5bfc\u51fa\u5230:\n{path}")
         except Exception as e:
             messagebox.showerror("\u5bfc\u51fa\u5931\u8d25", str(e))
 
@@ -699,8 +825,8 @@ def main():
             root = tk.Tk()
     else:
         root = tk.Tk()
-    root.geometry("860x720")
-    root.minsize(640, 520)
+    root.geometry("900x740")
+    root.minsize(660, 540)
     App(root)
     root.mainloop()
 
