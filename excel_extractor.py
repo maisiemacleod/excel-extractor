@@ -495,6 +495,11 @@ class App:
                                    style="Accent.TButton", command=self._run)
         self.run_btn.pack(side='right', padx=4)
 
+        # Export button right next to run button (always visible)
+        self.export_btn_top = ttk.Button(action_frame, text="\u2193  \u5bfc\u51fa\u7ed3\u679c",
+                                          command=self._export, state='disabled')
+        self.export_btn_top.pack(side='right', padx=4)
+
         # ---- Progress ----
         prog_frame = tk.Frame(main, bg=BG)
         prog_frame.pack(fill='x', padx=12, pady=(0, 4))
@@ -595,6 +600,7 @@ class App:
 
         self.run_btn.config(state='disabled')
         self.export_btn.config(state='disabled')
+        self.export_btn_top.config(state='disabled')
         self.results = []
         self.result_count.config(text="")
         for row in self.tree.get_children():
@@ -653,6 +659,7 @@ class App:
         self.run_btn.config(state='normal')
         if results:
             self.export_btn.config(state='normal')
+            self.export_btn_top.config(state='normal')
             self.result_count.config(
                 text=f"\u5171 {len(results)} \u6761\u7ed3\u679c",
                 fg=GREEN
